@@ -8,9 +8,14 @@ namespace OMS.Infrastructure.Persistence
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
 
+        public OrderDbContext(DbContextOptions<OrderDbContext> options) : base(options)
+        {
+        }
+
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-           
+            // Configurations...
+            base.OnModelCreating(modelBuilder);
         }
     }
 }

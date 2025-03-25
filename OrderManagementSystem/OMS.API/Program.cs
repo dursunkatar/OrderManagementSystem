@@ -20,28 +20,28 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Cache
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "OMS_";
-});
+//// Cache
+//builder.Services.AddStackExchangeRedisCache(options =>
+//{
+//    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+//    options.InstanceName = "OMS_";
+//});
 
-// RabbitMQ
-builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
-{
-    var factory = new ConnectionFactory
-    {
-        HostName = builder.Configuration["RabbitMQ:HostName"],
-        UserName = builder.Configuration["RabbitMQ:UserName"],
-        Password = builder.Configuration["RabbitMQ:Password"]
-    };
-    return new RabbitMQEventPublisher(factory);
-});
+//// RabbitMQ
+//builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
+//{
+//    var factory = new ConnectionFactory
+//    {
+//        HostName = builder.Configuration["RabbitMQ:HostName"],
+//        UserName = builder.Configuration["RabbitMQ:UserName"],
+//        Password = builder.Configuration["RabbitMQ:Password"]
+//    };
+//    return new RabbitMQEventPublisher(factory);
+//});
 
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<ICacheService, RedisCacheService>();
+//builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
 
 //TODO: JWT Auth eklenicek

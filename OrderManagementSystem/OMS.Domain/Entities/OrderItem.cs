@@ -1,11 +1,8 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
+﻿using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OMS.Domain.Entities
 {
+    [Table("OrderItems")]
     public class OrderItem
     {
         public int Id { get; private set; }
@@ -14,6 +11,9 @@ namespace OMS.Domain.Entities
         public string ProductName { get; private set; }
         public decimal Price { get; private set; }
         public int Quantity { get; private set; }
+
+        [ForeignKey("OrderId")]
+        public Order Order { get; set; }
 
         public static OrderItem Create(int productId, string productName, decimal price, int quantity)
         {

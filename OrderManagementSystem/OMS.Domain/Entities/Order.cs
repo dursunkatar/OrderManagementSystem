@@ -1,7 +1,9 @@
 ﻿using OMS.Domain.Enums;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OMS.Domain.Entities
 {
+    [Table("Orders")]
     public class Order
     {
         public int Id { get; private set; }
