@@ -18,7 +18,5 @@ namespace OMS.Infrastructure.Messaging
         {
             throw new NotImplementedException();
         }
-
-        // Implementasyon...
     }
 }
