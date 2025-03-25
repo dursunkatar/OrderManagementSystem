@@ -7,6 +7,10 @@ namespace OMS.Infrastructure.Persistence
     {
         public DbSet<Order> Orders { get; set; }
         public DbSet<OrderItem> OrderItems { get; set; }
+        public DbSet<Customer> Customers { get; set; }
+        public DbSet<Product> Products { get; set; }
+        public DbSet<OrderStatus> OrderStatus { get; set; }
+        public DbSet<Category> Categories { get; set; }
 
         public OrderDbContext(DbContextOptions<OrderDbContext> options) : base(options)
         {
@@ -14,7 +18,6 @@ namespace OMS.Infrastructure.Persistence
 
         protected override void OnModelCreating(ModelBuilder modelBuilder)
         {
-            // Configurations...
             base.OnModelCreating(modelBuilder);
         }
     }
