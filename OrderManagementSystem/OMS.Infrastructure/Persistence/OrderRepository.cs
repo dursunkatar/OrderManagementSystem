@@ -22,7 +22,12 @@ namespace OMS.Infrastructure.Persistence
             throw new NotImplementedException();
         }
 
-        public Task<Order> GetByIdAsync(Guid id)
+        public Task<Order> GetByIdAsync(int id)
+        {
+            throw new NotImplementedException();
+        }
+
+        public Task<int> GetCustomerOrderCountAsync(int customerId)
         {
             throw new NotImplementedException();
         }

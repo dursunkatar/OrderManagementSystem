@@ -1,0 +1,177 @@
+Folder PATH listing
+Volume serial number is 844A-9704
+C:.
+¦   OrderManagementSystem.sln
+¦   tree.txt
+¦   
++---OMS.API
+¦   ¦   appsettings.Development.json
+¦   ¦   appsettings.json
+¦   ¦   OMS.API.csproj
+¦   ¦   OMS.API.csproj.user
+¦   ¦   OMS.API.http
+¦   ¦   Program.cs
+¦   ¦   
+¦   +---bin
+¦   ¦   +---Debug
+¦   ¦       +---net9.0
+¦   ¦           +---runtimes
+¦   ¦               +---linux-arm64
+¦   ¦               ¦   +---native
+¦   ¦               +---linux-x64
+¦   ¦               ¦   +---native
+¦   ¦               +---osx-arm64
+¦   ¦               ¦   +---native
+¦   ¦               +---osx-x64
+¦   ¦               ¦   +---native
+¦   ¦               +---unix
+¦   ¦               ¦   +---lib
+¦   ¦               ¦       +---net6.0
+¦   ¦               +---win
+¦   ¦               ¦   +---lib
+¦   ¦               ¦       +---net6.0
+¦   ¦               +---win-arm
+¦   ¦               ¦   +---native
+¦   ¦               +---win-arm64
+¦   ¦               ¦   +---native
+¦   ¦               +---win-x64
+¦   ¦               ¦   +---native
+¦   ¦               +---win-x86
+¦   ¦                   +---native
+¦   +---Controllers
+¦   ¦       OrdersController.cs
+¦   ¦       
+¦   +---obj
+¦   ¦   ¦   OMS.API.csproj.nuget.dgspec.json
+¦   ¦   ¦   OMS.API.csproj.nuget.g.props
+¦   ¦   ¦   OMS.API.csproj.nuget.g.targets
+¦   ¦   ¦   project.assets.json
+¦   ¦   ¦   
+¦   ¦   +---Debug
+¦   ¦       +---net9.0
+¦   ¦           ¦   .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+¦   ¦           ¦   ApiEndpoints.json
+¦   ¦           ¦   apphost.exe
+¦   ¦           ¦   OMS.API.assets.cache
+¦   ¦           ¦   OMS.API.csproj.BuildWithSkipAnalyzers
+¦   ¦           ¦   OMS.API.csproj.FileListAbsolute.txt
+¦   ¦           ¦   OMS.API.GlobalUsings.g.cs
+¦   ¦           ¦   staticwebassets.references.upToDateCheck.txt
+¦   ¦           ¦   staticwebassets.removed.txt
+¦   ¦           ¦   
+¦   ¦           +---EndpointInfo
+¦   ¦           ¦       OMS.API.json
+¦   ¦           ¦       OMS.API.OpenApiFiles.cache
+¦   ¦           ¦       
+¦   ¦           +---ref
+¦   ¦           +---refint
+¦   ¦           +---staticwebassets
+¦   +---Properties
+¦           launchSettings.json
+¦           
++---OMS.Application
+¦   ¦   OMS.Application.csproj
+¦   ¦   
+¦   +---bin
+¦   ¦   +---Debug
+¦   ¦       +---net9.0
+¦   +---DTOs
+¦   ¦       AddressRequest.cs
+¦   ¦       CreateOrderRequest.cs
+¦   ¦       CreditCardInfo.cs
+¦   ¦       OrderDto.cs
+¦   ¦       OrderItemDto.cs
+¦   ¦       OrderItemRequest.cs
+¦   ¦       PagedResult.cs
+¦   ¦       PaymentRequest.cs
+¦   ¦       
+¦   +---Events
+¦   ¦       OrderStatusChangedEvent.cs
+¦   ¦       
+¦   +---Interfaces
+¦   ¦       ICacheService.cs
+¦   ¦       IEventPublisher.cs
+¦   ¦       IOrderRepository.cs
+¦   ¦       IOrderService.cs
+¦   ¦       
+¦   +---obj
+¦   ¦   ¦   OMS.Application.csproj.nuget.dgspec.json
+¦   ¦   ¦   OMS.Application.csproj.nuget.g.props
+¦   ¦   ¦   OMS.Application.csproj.nuget.g.targets
+¦   ¦   ¦   project.assets.json
+¦   ¦   ¦   
+¦   ¦   +---Debug
+¦   ¦       +---net9.0
+¦   ¦           ¦   .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+¦   ¦           ¦   OMS.Application.assets.cache
+¦   ¦           ¦   OMS.Application.csproj.FileListAbsolute.txt
+¦   ¦           ¦   OMS.Application.GlobalUsings.g.cs
+¦   ¦           ¦   
+¦   ¦           +---ref
+¦   ¦           +---refint
+¦   +---Services
+¦           OrderService.cs
+¦           
++---OMS.Domain
+¦   ¦   Const.cs
+¦   ¦   OMS.Domain.csproj
+¦   ¦   
+¦   +---bin
+¦   ¦   +---Debug
+¦   ¦       +---net9.0
+¦   +---Entities
+¦   ¦       Category.cs
+¦   ¦       Customer.cs
+¦   ¦       Order.cs
+¦   ¦       OrderItem.cs
+¦   ¦       OrderStatus.cs
+¦   ¦       Product.cs
+¦   ¦       
+¦   +---obj
+¦       ¦   OMS.Domain.csproj.nuget.dgspec.json
+¦       ¦   OMS.Domain.csproj.nuget.g.props
+¦       ¦   OMS.Domain.csproj.nuget.g.targets
+¦       ¦   project.assets.json
+¦       ¦   
+¦       +---Debug
+¦           +---net9.0
+¦               ¦   .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+¦               ¦   OMS.Domain.assets.cache
+¦               ¦   OMS.Domain.csproj.FileListAbsolute.txt
+¦               ¦   OMS.Domain.GlobalUsings.g.cs
+¦               ¦   
+¦               +---ref
+¦               +---refint
++---OMS.Infrastructure
+    ¦   DependencyInjection.cs
+    ¦   OMS.Infrastructure.csproj
+    ¦   
+    +---bin
+    ¦   +---Debug
+    ¦       +---net9.0
+    +---Caching
+    ¦       RedisCacheService.cs
+    ¦       
+    +---Messaging
+    ¦       RabbitMQEventPublisher.cs
+    ¦       
+    +---obj
+    ¦   ¦   OMS.Infrastructure.csproj.nuget.dgspec.json
+    ¦   ¦   OMS.Infrastructure.csproj.nuget.g.props
+    ¦   ¦   OMS.Infrastructure.csproj.nuget.g.targets
+    ¦   ¦   project.assets.json
+    ¦   ¦   
+    ¦   +---Debug
+    ¦       +---net9.0
+    ¦           ¦   .NETCoreApp,Version=v9.0.AssemblyAttributes.cs
+    ¦           ¦   OMS.Infrastructure.assets.cache
+    ¦           ¦   OMS.Infrastructure.csproj.BuildWithSkipAnalyzers
+    ¦           ¦   OMS.Infrastructure.csproj.FileListAbsolute.txt
+    ¦           ¦   OMS.Infrastructure.GlobalUsings.g.cs
+    ¦           ¦   
+    ¦           +---ref
+    ¦           +---refint
+    +---Persistence
+            OrderDbContext.cs
+            OrderRepository.cs
+            
