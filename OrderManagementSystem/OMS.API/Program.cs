@@ -1,4 +1,6 @@
+ï»¿using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
+using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OMS.Application.Interfaces;
 using OMS.Application.Services;
@@ -6,6 +8,7 @@ using OMS.Infrastructure.Caching;
 using OMS.Infrastructure.Messaging;
 using OMS.Infrastructure.Persistence;
 using RabbitMQ.Client;
+using System.Text;
 using System.Threading.RateLimiting;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -20,36 +23,65 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-//// Cache
-//builder.Services.AddStackExchangeRedisCache(options =>
-//{
-//    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-//    options.InstanceName = "OMS_";
-//});
+builder.Services.AddStackExchangeRedisCache(options =>
+{
+    options.Configuration = builder.Configuration.GetConnectionString("Redis");
+    options.InstanceName = "OMS_";
+});
 
-//// RabbitMQ
-//builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
-//{
-//    var factory = new ConnectionFactory
-//    {
-//        HostName = builder.Configuration["RabbitMQ:HostName"],
-//        UserName = builder.Configuration["RabbitMQ:UserName"],
-//        Password = builder.Configuration["RabbitMQ:Password"]
-//    };
-//    return new RabbitMQEventPublisher(factory);
-//});
+builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
+{
+    var factory = new ConnectionFactory
+    {
+        HostName = builder.Configuration["RabbitMQ:HostName"],
+        UserName = builder.Configuration["RabbitMQ:UserName"],
+        Password = builder.Configuration["RabbitMQ:Password"]
+    };
+    return new RabbitMQEventPublisher(factory);
+});
 
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-//builder.Services.AddScoped<ICacheService, RedisCacheService>();
+builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ITokenService, TokenService>();
 
-//TODO: JWT Auth eklenicek
-//builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-//    .AddJwtBearer(options =>
-//    {
-//        // JWT konfigürasyonu...
-//    });
+builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
+    .AddJwtBearer(options =>
+    {
+        options.TokenValidationParameters = new TokenValidationParameters
+        {
+            ValidateLifetime = true,
+            ValidateIssuerSigningKey = true,
+            IssuerSigningKey = new SymmetricSecurityKey(
+                Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"])),
+            ClockSkew = TimeSpan.Zero
+        };
+
+        options.Events = new JwtBearerEvents
+        {
+            OnAuthenticationFailed = context =>
+            {
+                if (context.Exception.GetType() == typeof(SecurityTokenExpiredException))
+                {
+                    context.Response.Headers.Add("Token-Expired", "true");
+                }
+                return Task.CompletedTask;
+            },
+            OnMessageReceived = context =>
+            {
+                var accessToken = context.Request.Query["access_token"];
+                var path = context.HttpContext.Request.Path;
+
+                if (!string.IsNullOrEmpty(accessToken) &&
+                    path.StartsWithSegments("/hubs"))
+                {
+                    context.Token = accessToken;
+                }
+                return Task.CompletedTask;
+            }
+        };
+    });
 
 builder.Services.AddRateLimiter(options =>
 {
