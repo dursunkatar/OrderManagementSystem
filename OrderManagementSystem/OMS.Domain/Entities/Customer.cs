@@ -1,4 +1,5 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using OMS.Domain.Helpers;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace OMS.Domain.Entities
 {
@@ -14,6 +15,7 @@ namespace OMS.Domain.Entities
         public DateTime RegisteredAt { get; private set; }
         public bool IsActive { get; private set; }
         public string Address { get; private set; }
+        public string PasswordHash { get; private set; }
         public virtual ICollection<Order> Orders { get; private set; } = new List<Order>();
         private Customer() { }
 
@@ -22,7 +24,8 @@ namespace OMS.Domain.Entities
             string firstName,
             string lastName,
             string phoneNumber,
-            string address
+            string address,
+            string password
             )
         {
             if (string.IsNullOrEmpty(email))
@@ -34,6 +37,9 @@ namespace OMS.Domain.Entities
             if (string.IsNullOrEmpty(lastName))
                 throw new ArgumentNullException(nameof(lastName), "Soyad boş olamaz.");
 
+            if (string.IsNullOrEmpty(password))
+                throw new ArgumentNullException(nameof(password), "password boş olamaz.");
+
             return new Customer
             {
                 Email = email.ToLowerInvariant(),
@@ -42,18 +48,19 @@ namespace OMS.Domain.Entities
                 PhoneNumber = phoneNumber,
                 RegisteredAt = DateTime.UtcNow,
                 IsActive = true,
-                Address = address
+                Address = address,
+                PasswordHash = SecurityHelper.CreateMD5Hash(password)
             };
         }
 
-        public void UpdateProfile(string firstName, string lastName, string phoneNumber,string address)
+        public void UpdateProfile(string firstName, string lastName, string phoneNumber, string address)
         {
             if (!string.IsNullOrEmpty(firstName))
                 FirstName = firstName;
 
             if (!string.IsNullOrEmpty(lastName))
                 LastName = lastName;
-            
+
             if (!string.IsNullOrEmpty(address))
                 Address = address;
 

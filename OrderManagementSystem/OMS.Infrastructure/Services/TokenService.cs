@@ -5,7 +5,7 @@ using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
 
-namespace OMS.Infrastructure.Persistence
+namespace OMS.Infrastructure.Services
 {
     public class TokenService : ITokenService
     {

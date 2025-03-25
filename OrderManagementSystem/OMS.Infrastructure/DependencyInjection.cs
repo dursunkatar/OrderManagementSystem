@@ -2,6 +2,7 @@
 using Microsoft.Extensions.DependencyInjection;
 using OMS.Application.Interfaces;
 using OMS.Infrastructure.Caching;
+using OMS.Infrastructure.Services;
 
 namespace OMS.Infrastructure
 {
@@ -16,6 +17,8 @@ namespace OMS.Infrastructure
             });
 
             services.AddScoped<ICacheService, RedisCacheService>();
+            services.AddScoped<IAuthService, AuthService>();
+            services.AddScoped<ITokenService, TokenService>();
 
             return services;
         }

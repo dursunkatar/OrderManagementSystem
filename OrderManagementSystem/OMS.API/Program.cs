@@ -4,7 +4,7 @@ using Microsoft.IdentityModel.Tokens;
 using Microsoft.OpenApi.Models;
 using OMS.Application.Interfaces;
 using OMS.Application.Services;
-using OMS.Infrastructure.Caching;
+using OMS.Infrastructure;
 using OMS.Infrastructure.Messaging;
 using OMS.Infrastructure.Persistence;
 using RabbitMQ.Client;
@@ -23,12 +23,6 @@ builder.Services.AddSwaggerGen(c =>
 builder.Services.AddDbContext<OrderDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-builder.Services.AddStackExchangeRedisCache(options =>
-{
-    options.Configuration = builder.Configuration.GetConnectionString("Redis");
-    options.InstanceName = "OMS_";
-});
-
 builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
 {
     var factory = new ConnectionFactory
@@ -42,9 +36,8 @@ builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
 
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
-builder.Services.AddScoped<ICacheService, RedisCacheService>();
 builder.Services.AddScoped<IOrderService, OrderService>();
-builder.Services.AddScoped<ITokenService, TokenService>();
+builder.Services.AddInfrastructureServices(builder.Configuration);
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>
