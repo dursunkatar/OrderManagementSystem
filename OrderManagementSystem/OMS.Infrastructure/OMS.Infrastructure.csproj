@@ -19,6 +19,7 @@
   </ItemGroup>
 
   <ItemGroup>
+    <ProjectReference Include="..\OMS.Application\OMS.Application.csproj" />
     <ProjectReference Include="..\OMS.Domain\OMS.Domain.csproj" />
   </ItemGroup>
 
