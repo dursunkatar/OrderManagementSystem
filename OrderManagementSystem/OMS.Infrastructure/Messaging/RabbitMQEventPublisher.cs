@@ -14,6 +14,10 @@ namespace OMS.Infrastructure.Messaging
         private readonly IConnection _connection;
         private readonly IModel _channel;
 
+        public RabbitMQEventPublisher(ConnectionFactory connectionFactory)
+        {
+        }
+
         public Task PublishAsync<T>(T @event) where T : class
         {
             throw new NotImplementedException();
