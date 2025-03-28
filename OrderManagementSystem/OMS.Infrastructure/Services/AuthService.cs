@@ -3,9 +3,6 @@ using OMS.Application.DTOs;
 using OMS.Application.Interfaces;
 using OMS.Domain.Entities;
 using OMS.Domain.Helpers;
-using System.Security.Cryptography;
-using System.Text;
-
 
 namespace OMS.Infrastructure.Services
 {

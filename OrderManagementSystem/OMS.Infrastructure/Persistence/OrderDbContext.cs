@@ -11,6 +11,8 @@ namespace OMS.Infrastructure.Persistence
         public DbSet<Product> Products { get; set; }
         public DbSet<OrderStatus> OrderStatus { get; set; }
         public DbSet<Category> Categories { get; set; }
+        public DbSet<Cart> Carts { get; set; }
+        public DbSet<CartItem> CartItems { get; set; }
 
         public OrderDbContext(DbContextOptions<OrderDbContext> options) : base(options)
         {

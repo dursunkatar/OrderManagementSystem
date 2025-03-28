@@ -148,7 +148,7 @@ namespace OMS.Application.Services
             }
         }
 
-        public async Task<OrderDto> GetOrderAsync(Guid orderId)
+        public async Task<OrderDto> GetOrderAsync(int orderId)
         {
             try
             {
@@ -232,8 +232,91 @@ namespace OMS.Application.Services
             }
         }
 
+        public async Task<OrderDto> CancelOrderAsync(int orderId)
+        {
+            // CancelOrderAsync(Guid orderId) metodu yerine bu metodu kullanacağız
+            try
+            {
+                var order = await _orderRepository.GetByIdAsync(orderId);
+                if (order == null)
+                {
+                    _logger.LogWarning("İptal edilecek sipariş bulunamadı: {OrderId}", orderId);
+                    throw new InvalidOperationException($"Sipariş bulunamadı: {orderId}");
+                }
+
+                if (order.StatusId != Const.OrderStatus.PENDING)
+                {
+                    _logger.LogWarning("Sipariş iptal edilemez çünkü durumu Pending değil. Sipariş ID: {OrderId}, Mevcut Durum: {Status}",
+                        orderId, order.Status.Name);
+                    throw new InvalidOperationException($"Sadece Pending durumundaki siparişler iptal edilebilir. Mevcut durum: {order.Status.Name}");
+                }
+
+                var oldStatus = order.Status.Name;
+
+                await _unitOfWork.BeginTransactionAsync();
+
+                try
+                {
+                    order.Cancel();
+                    await _orderRepository.UpdateAsync(order);
+
+                    int[] productIds = order.Items.Select(o => o.ProductId).ToArray();
+
+                    var products = await _productRepository.GetListByProductIdsAsync(productIds);
+
+                    foreach (var product in products)
+                    {
+                        var item = order.Items.Single(p => p.ProductId == product.Id);
+                        // Stok miktarını geri ekle
+                        product.UpdateStock(item.Quantity);
+                        await _productRepository.UpdateAsync(product);
+                    }
+
+                    // Değişiklikleri uygula
+                    await _unitOfWork.SaveChangesAsync();
+
+                    // Transaction tamamla
+                    await _unitOfWork.CommitTransactionAsync();
+
+                    // Event yayınla
+                    var statusChangedEvent = new OrderStatusChangedEvent
+                    {
+                        OrderId = order.Id,
+                        OldStatus = oldStatus,
+                        NewStatus = order.Status.Name,
+                        ChangedAt = DateTime.UtcNow
+                    };
+
+                    await _eventPublisher.PublishAsync(statusChangedEvent);
+
+                    // Cache'ten sil (artık geçersiz)
+                    await _cacheService.RemoveAsync(string.Format(ORDER_CACHE_KEY, orderId));
+
+                    // DTO'ya dönüştür
+                    var orderDto = MapOrderToDto(order);
+
+                    _logger.LogInformation("Sipariş başarıyla iptal edildi. Sipariş ID: {OrderId}", orderId);
+                    return orderDto;
+                }
+                catch (Exception ex)
+                {
+                    // Hata durumunda transaction geri al
+                    await _unitOfWork.RollbackTransactionAsync();
+                    _logger.LogError(ex, "Sipariş iptal edilirken hata: {Message}", ex.Message);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Sipariş iptal edilirken hata: {Message}", ex.Message);
+                throw;
+            }
+        }
+
+        // OrderService.cs içindeki eksik metotlar
         public async Task<OrderDto> CompleteOrderAsync(int orderId)
         {
+            // CompleteOrderAsync(Guid orderId) metodu yerine bu metodu kullanacağız
             try
             {
                 var order = await _orderRepository.GetByIdAsync(orderId);
@@ -247,8 +330,8 @@ namespace OMS.Application.Services
                 if (order.StatusId != Const.OrderStatus.PENDING)
                 {
                     _logger.LogWarning("Sipariş tamamlanamaz çünkü durumu Pending değil. Sipariş ID: {OrderId}, Mevcut Durum: {Status}",
-                        orderId, order.Status);
-                    throw new InvalidOperationException($"Sadece Pending durumundaki siparişler tamamlanabilir. Mevcut durum: {order.Status}");
+                        orderId, order.Status.Name);
+                    throw new InvalidOperationException($"Sadece Pending durumundaki siparişler tamamlanabilir. Mevcut durum: {order.Status.Name}");
                 }
 
                 // Eski durumu kaydet (event için)
@@ -288,106 +371,29 @@ namespace OMS.Application.Services
             }
         }
 
-        public async Task<OrderDto> CancelOrderAsync(int orderId)
+        // OrderService.cs içine MapOrderToDto yardımcı metodu ekleyin
+        private OrderDto MapOrderToDto(Order order)
         {
-            try
+            return new OrderDto
             {
-                var order = await _orderRepository.GetByIdAsync(orderId);
-                if (order == null)
+                Id = order.Id,
+                CustomerId = order.CustomerId,
+                CustomerName = order.Customer?.FullName,
+                Status = order.Status?.Name,
+                CreatedAt = order.CreatedAt,
+                CompletedAt = order.CompletedAt,
+                CancelledAt = order.CancelledAt,
+                TotalAmount = order.TotalAmount,
+                Items = order.Items.Select(i => new OrderItemDto
                 {
-                    _logger.LogWarning("İptal edilecek sipariş bulunamadı: {OrderId}", orderId);
-                    throw new InvalidOperationException($"Sipariş bulunamadı: {orderId}");
-                }
-
-                if (order.StatusId != Const.OrderStatus.PENDING)
-                {
-                    _logger.LogWarning("Sipariş iptal edilemez çünkü durumu Pending değil. Sipariş ID: {OrderId}, Mevcut Durum: {Status}",
-                        orderId, order.Status.Name);
-                    throw new InvalidOperationException($"Sadece Pending durumundaki siparişler iptal edilebilir. Mevcut durum: {order.Status.Name}");
-                }
-
-                var oldStatus = order.Status;
-
-                await _unitOfWork.BeginTransactionAsync();
-
-                try
-                {
-                    order.Cancel();
-                    await _orderRepository.UpdateAsync(order);
-
-                    int[] productIds = order.Items.Select(o => o.ProductId).ToArray();
-
-                    var products = await _productRepository.GetListByProductIdsAsync(productIds);
-
-                    foreach (var product in products)
-                    {
-
-                        var item = order.Items.Single(p => p.ProductId == product.Id);
-                        // Stok miktarını geri ekle
-                        product.UpdateStock(item.Quantity);
-                        await _productRepository.UpdateAsync(product);
-                    }
-
-                    foreach (var item in order.Items)
-                    {
-                        var product = await _productRepository.GetByIdAsync(item.ProductId);
-                        if (product != null)
-                        {
-                            // Stok miktarını geri ekle
-                            product.UpdateStock(item.Quantity);
-                            await _productRepository.UpdateAsync(product);
-                        }
-                    }
-
-                    // Değişiklikleri uygula
-                    await _unitOfWork.SaveChangesAsync();
-
-                    // Transaction tamamla
-                    await _unitOfWork.CommitTransactionAsync();
-
-                    // Event yayınla
-                    var statusChangedEvent = new OrderStatusChangedEvent
-                    {
-                        OrderId = order.Id,
-                        OldStatus = oldStatus,
-                        NewStatus = order.Status,
-                        ChangedAt = DateTime.UtcNow
-                    };
-
-                    await _eventPublisher.PublishAsync(statusChangedEvent);
-
-                    // Cache'ten sil (artık geçersiz)
-                    await _cacheService.RemoveAsync(string.Format(ORDER_CACHE_KEY, orderId));
-
-                    // DTO'ya dönüştür
-                    var orderDto = MapOrderToDto(order);
-
-                    _logger.LogInformation("Sipariş başarıyla iptal edildi. Sipariş ID: {OrderId}", orderId);
-                    return orderDto;
-                }
-                catch (Exception ex)
-                {
-                    // Hata durumunda transaction geri al
-                    await _unitOfWork.RollbackTransactionAsync();
-                    _logger.LogError(ex, "Sipariş iptal edilirken hata: {Message}", ex.Message);
-                    throw;
-                }
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Sipariş iptal edilirken hata: {Message}", ex.Message);
-                throw;
-            }
-        }
-
-        public Task<OrderDto> CompleteOrderAsync(Guid orderId)
-        {
-            throw new NotImplementedException();
-        }
-
-        public Task<OrderDto> CancelOrderAsync(Guid orderId)
-        {
-            throw new NotImplementedException();
+                    Id = i.Id,
+                    OrderId = i.OrderId,
+                    ProductId = i.ProductId,
+                    ProductName = i.ProductName,
+                    Price = i.Price,
+                    Quantity = i.Quantity
+                }).ToList()
+            };
         }
     }
 }

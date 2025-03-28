@@ -5,9 +5,9 @@ namespace OMS.Application.Interfaces
     public interface IOrderService
     {
         Task<OrderDto> CreateOrderAsync(CreateOrderRequest request);
-        Task<OrderDto> GetOrderAsync(Guid orderId);
+        Task<OrderDto> GetOrderAsync(int orderId);
         Task<PagedResult<OrderDto>> GetCustomerOrdersAsync(int customerId, int page, int pageSize);
-        Task<OrderDto> CompleteOrderAsync(Guid orderId);
-        Task<OrderDto> CancelOrderAsync(Guid orderId);
+        Task<OrderDto> CompleteOrderAsync(int orderId);
+        Task<OrderDto> CancelOrderAsync(int orderId);
     }
 }

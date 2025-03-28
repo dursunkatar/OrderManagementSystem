@@ -1,4 +1,5 @@
-﻿using OMS.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using OMS.Application.Interfaces;
 using OMS.Domain.Entities;
 using System;
 using System.Collections.Generic;
@@ -12,29 +13,48 @@ namespace OMS.Infrastructure.Persistence
     {
         private readonly OrderDbContext _context;
 
-        public Task<Order> AddAsync(Order order)
+        public OrderRepository(OrderDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
 
-        public Task<IEnumerable<Order>> GetByCustomerIdAsync(int customerId, int page, int pageSize)
+        public async Task<Order> GetByIdAsync(int id)
         {
-            throw new NotImplementedException();
+            return await _context.Orders
+                .Include(o => o.Items)
+                .Include(o => o.Customer)
+                .Include(o => o.Status)
+                .FirstOrDefaultAsync(o => o.Id == id);
         }
 
-        public Task<Order> GetByIdAsync(int id)
+        public async Task<IEnumerable<Order>> GetByCustomerIdAsync(int customerId, int page, int pageSize)
         {
-            throw new NotImplementedException();
+            return await _context.Orders
+                .Include(o => o.Items)
+                .Include(o => o.Status)
+                .Where(o => o.CustomerId == customerId)
+                .OrderByDescending(o => o.CreatedAt)
+                .Skip((page - 1) * pageSize)
+                .Take(pageSize)
+                .ToListAsync();
         }
 
-        public Task<int> GetCustomerOrderCountAsync(int customerId)
+        public async Task<int> GetCustomerOrderCountAsync(int customerId)
         {
-            throw new NotImplementedException();
+            return await _context.Orders
+                .Where(o => o.CustomerId == customerId)
+                .CountAsync();
         }
 
-        public Task UpdateAsync(Order order)
+        public async Task<Order> AddAsync(Order order)
         {
-            throw new NotImplementedException();
+            await _context.Orders.AddAsync(order);
+            return order;
+        }
+
+        public async Task UpdateAsync(Order order)
+        {
+            _context.Entry(order).State = EntityState.Modified;
         }
     }
 }

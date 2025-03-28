@@ -7,6 +7,7 @@ using OMS.Application.Services;
 using OMS.Infrastructure;
 using OMS.Infrastructure.Messaging;
 using OMS.Infrastructure.Persistence;
+using OMS.Infrastructure.Services;
 using RabbitMQ.Client;
 using System.Text;
 using System.Threading.RateLimiting;
@@ -37,7 +38,15 @@ builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
 
 builder.Services.AddScoped<IOrderRepository, OrderRepository>();
 builder.Services.AddScoped<IOrderService, OrderService>();
+builder.Services.AddScoped<ICartRepository, CartRepository>();
+builder.Services.AddScoped<ICustomerRepository, CustomerRepository>();
+builder.Services.AddScoped<IProductRepository, ProductRepository>();
+builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddInfrastructureServices(builder.Configuration);
+builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
+
+// Services
+
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     .AddJwtBearer(options =>

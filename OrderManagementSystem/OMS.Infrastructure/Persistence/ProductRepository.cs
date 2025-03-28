@@ -1,13 +1,34 @@
-﻿using OMS.Application.Interfaces;
+﻿using Microsoft.EntityFrameworkCore;
+using OMS.Application.Interfaces;
 using OMS.Domain.Entities;
 
 namespace OMS.Infrastructure.Persistence
 {
     public class ProductRepository : IProductRepository
     {
-        public Task<IEnumerable<Product>> GetListByProductIdsAsync(int[] productIds)
+        private readonly OrderDbContext _context;
+
+        public ProductRepository(OrderDbContext context)
         {
-            throw new NotImplementedException();
+            _context = context;
         }
+
+        public async Task<Product> GetByIdAsync(int id)
+        {
+            return await _context.Products.FindAsync(id);
+        }
+
+        public async Task<IEnumerable<Product>> GetListByProductIdsAsync(int[] productIds)
+        {
+            return await _context.Products
+                .Where(p => productIds.Contains(p.Id))
+                .ToListAsync();
+        }
+
+        public async Task UpdateAsync(Product product)
+        {
+            _context.Entry(product).State = EntityState.Modified;
+        }
+      
     }
 }
