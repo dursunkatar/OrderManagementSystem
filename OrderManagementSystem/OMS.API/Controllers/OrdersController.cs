@@ -2,6 +2,7 @@
 using Microsoft.AspNetCore.Mvc;
 using OMS.Application.DTOs;
 using OMS.Application.Interfaces;
+using System.Security.Claims;
 
 namespace OMS.API.Controllers
 {
@@ -11,7 +12,6 @@ namespace OMS.API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
-        private readonly ICartService _cartService;
         private readonly ILogger<OrdersController> _logger;
 
         public OrdersController(
@@ -20,45 +20,6 @@ namespace OMS.API.Controllers
         {
             _orderService = orderService;
             _logger = logger;
-        }
-
-        public OrdersController(
-            IOrderService orderService,
-            ICartService cartService,
-            ILogger<OrdersController> logger)
-        {
-            _orderService = orderService;
-            _cartService = cartService;
-            _logger = logger;
-        }
-
-        [HttpPost]
-        public async Task<IActionResult> CreateOrder([FromBody] CreateOrderRequest request)
-        {
-            try
-            {
-                if (!ModelState.IsValid)
-                {
-                    return BadRequest(ModelState);
-                }
-
-                var orderDto = await _orderService.CreateOrderAsync(request);
-
-                // Sipariş başarıyla oluşturulduysa sepeti temizle
-                await _cartService.ClearCartAsync(request.CustomerId);
-
-                return CreatedAtAction(nameof(GetOrder), new { id = orderDto.Id }, orderDto);
-            }
-            catch (InvalidOperationException ex)
-            {
-                _logger.LogWarning(ex, "Sipariş oluşturulurken doğrulama hatası: {Message}", ex.Message);
-                return BadRequest(new { message = ex.Message });
-            }
-            catch (Exception ex)
-            {
-                _logger.LogError(ex, "Sipariş oluşturulurken hata oluştu");
-                return StatusCode(500, new { message = "Sipariş oluşturulurken bir hata oluştu" });
-            }
         }
 
         [HttpPost("from-cart")]
@@ -71,8 +32,16 @@ namespace OMS.API.Controllers
                     return BadRequest(ModelState);
                 }
 
+                // JWT token'dan kullanıcı ID'sini al
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+
                 // Sepetten sipariş oluştur
-                var orderDto = await _orderService.CreateOrderFromCartAsync(request);
+                var orderDto = await _orderService.CreateOrderFromCartAsync(request, userId);
 
                 return CreatedAtAction(nameof(GetOrder), new { id = orderDto.Id }, orderDto);
             }
@@ -93,11 +62,24 @@ namespace OMS.API.Controllers
         {
             try
             {
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
                 var orderDto = await _orderService.GetOrderAsync(id);
                 if (orderDto == null)
                 {
                     return NotFound(new { message = "Sipariş bulunamadı" });
                 }
+
+                // Kullanıcı sadece kendi siparişlerini görebilir (admin olmadığı sürece)
+                if (orderDto.CustomerId != userId && !User.IsInRole("Admin"))
+                {
+                    return Forbid();
+                }
+
                 return Ok(orderDto);
             }
             catch (Exception ex)
@@ -107,7 +89,29 @@ namespace OMS.API.Controllers
             }
         }
 
+        [HttpGet("my-orders")]
+        public async Task<IActionResult> GetMyOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
+        {
+            try
+            {
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+                var pagedOrders = await _orderService.GetCustomerOrdersAsync(userId, page, pageSize);
+                return Ok(pagedOrders);
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Siparişler getirilirken hata oluştu");
+                return StatusCode(500, new { message = "Siparişler getirilirken bir hata oluştu" });
+            }
+        }
+
         [HttpGet("customer/{customerId}")]
+        [Authorize(Roles = "Admin")] // Sadece admin kullanıcılar diğer müşterilerin siparişlerini görebilir
         public async Task<IActionResult> GetCustomerOrders(int customerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -123,6 +127,7 @@ namespace OMS.API.Controllers
         }
 
         [HttpPut("{id}/complete")]
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> CompleteOrder(int id)
         {
             try
@@ -147,6 +152,21 @@ namespace OMS.API.Controllers
         {
             try
             {
+                // Siparişi kontrol et
+                var order = await _orderService.GetOrderAsync(id);
+                if (order == null)
+                {
+                    return NotFound(new { message = "Sipariş bulunamadı" });
+                }
+
+                var userId = GetCurrentUserId();
+
+                // Kullanıcı sadece kendi siparişlerini iptal edebilir (admin olmadığı sürece)
+                if (order.CustomerId != userId && !User.IsInRole("Admin"))
+                {
+                    return Forbid();
+                }
+
                 var orderDto = await _orderService.CancelOrderAsync(id);
                 return Ok(orderDto);
             }
@@ -160,6 +180,17 @@ namespace OMS.API.Controllers
                 _logger.LogError(ex, "Sipariş iptal edilirken hata oluştu");
                 return StatusCode(500, new { message = "Sipariş iptal edilirken bir hata oluştu" });
             }
+        }
+
+        // JWT token'dan kullanıcı ID'sini alma yardımcı metodu
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return userId;
+            }
+            return 0;
         }
     }
 }

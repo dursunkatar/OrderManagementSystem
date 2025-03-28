@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using OMS.Application.DTOs;
 using OMS.Application.Interfaces;
+using System.Security.Claims;
 
 namespace OMS.API.Controllers
 {
@@ -20,12 +21,18 @@ namespace OMS.API.Controllers
             _logger = logger;
         }
 
-        [HttpGet("{customerId}")]
-        public async Task<IActionResult> GetCart(int customerId)
+        [HttpGet]
+        public async Task<IActionResult> GetCart()
         {
             try
             {
-                var cart = await _cartService.GetCartAsync(customerId);
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+                var cart = await _cartService.GetCartAsync(userId);
                 return Ok(cart);
             }
             catch (Exception ex)
@@ -35,8 +42,8 @@ namespace OMS.API.Controllers
             }
         }
 
-        [HttpPost("{customerId}/items")]
-        public async Task<IActionResult> AddToCart(int customerId, [FromBody] AddToCartRequest request)
+        [HttpPost("items")]
+        public async Task<IActionResult> AddToCart([FromBody] AddToCartRequest request)
         {
             try
             {
@@ -45,7 +52,13 @@ namespace OMS.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var cart = await _cartService.AddToCartAsync(customerId, request);
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+                var cart = await _cartService.AddToCartAsync(userId, request);
                 return Ok(cart);
             }
             catch (InvalidOperationException ex)
@@ -60,8 +73,8 @@ namespace OMS.API.Controllers
             }
         }
 
-        [HttpPut("{customerId}/items")]
-        public async Task<IActionResult> UpdateCartItem(int customerId, [FromBody] UpdateCartItemRequest request)
+        [HttpPut("items")]
+        public async Task<IActionResult> UpdateCartItem([FromBody] UpdateCartItemRequest request)
         {
             try
             {
@@ -70,7 +83,13 @@ namespace OMS.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                var cart = await _cartService.UpdateCartItemAsync(customerId, request);
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+                var cart = await _cartService.UpdateCartItemAsync(userId, request);
                 return Ok(cart);
             }
             catch (InvalidOperationException ex)
@@ -85,12 +104,18 @@ namespace OMS.API.Controllers
             }
         }
 
-        [HttpDelete("{customerId}/items/{productId}")]
-        public async Task<IActionResult> RemoveFromCart(int customerId, int productId)
+        [HttpDelete("items/{productId}")]
+        public async Task<IActionResult> RemoveFromCart(int productId)
         {
             try
             {
-                var result = await _cartService.RemoveFromCartAsync(customerId, productId);
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+                var result = await _cartService.RemoveFromCartAsync(userId, productId);
                 if (result)
                 {
                     return Ok(new { message = "Ürün sepetten kaldırıldı" });
@@ -104,12 +129,18 @@ namespace OMS.API.Controllers
             }
         }
 
-        [HttpDelete("{customerId}")]
-        public async Task<IActionResult> ClearCart(int customerId)
+        [HttpDelete]
+        public async Task<IActionResult> ClearCart()
         {
             try
             {
-                var result = await _cartService.ClearCartAsync(customerId);
+                var userId = GetCurrentUserId();
+                if (userId == 0)
+                {
+                    return Unauthorized(new { message = "Geçersiz kullanıcı" });
+                }
+
+                var result = await _cartService.ClearCartAsync(userId);
                 if (result)
                 {
                     return Ok(new { message = "Sepet temizlendi" });
@@ -121,6 +152,17 @@ namespace OMS.API.Controllers
                 _logger.LogError(ex, "Sepet temizlenirken hata oluştu");
                 return StatusCode(500, new { message = "Sepet temizlenirken bir hata oluştu" });
             }
+        }
+
+        // JWT token'dan kullanıcı ID'sini alma yardımcı metodu
+        private int GetCurrentUserId()
+        {
+            var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);
+            if (userIdClaim != null && int.TryParse(userIdClaim.Value, out int userId))
+            {
+                return userId;
+            }
+            return 0;
         }
     }
 }
