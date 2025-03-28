@@ -19,16 +19,19 @@ namespace OMS.Domain.Entities
         [ForeignKey("StatusId")]
         public OrderStatus Status { get; private set; }
 
+        public string ShippingAddress { get; set; }
+
         public decimal TotalAmount => Items.Sum(i => i.Price * i.Quantity);
 
-        public static Order Create(int customerId, IEnumerable<OrderItem> items)
+        public static Order Create(int customerId, string shippingAddress, IEnumerable<OrderItem> items)
         {
             return new Order
             {
                 CustomerId = customerId,
                 CreatedAt = DateTime.UtcNow,
                 Items = items.ToList(),
-                StatusId = Const.OrderStatus.PENDING
+                StatusId = Const.OrderStatus.PENDING,
+                ShippingAddress = shippingAddress,
             };
         }
 

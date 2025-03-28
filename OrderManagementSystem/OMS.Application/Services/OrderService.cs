@@ -10,6 +10,7 @@ namespace OMS.Application.Services
     public class OrderService : IOrderService
     {
         private readonly IOrderRepository _orderRepository;
+        private readonly ICartRepository _cartRepository;
         private readonly IProductRepository _productRepository;
         private readonly ICustomerRepository _customerRepository;
         private readonly ICacheService _cacheService;
@@ -28,7 +29,8 @@ namespace OMS.Application.Services
             ICacheService cacheService,
             IEventPublisher eventPublisher,
             IUnitOfWork unitOfWork,
-            ILogger<OrderService> logger)
+            ILogger<OrderService> logger,
+            ICartRepository cartRepository)
         {
             _orderRepository = orderRepository ?? throw new ArgumentNullException(nameof(orderRepository));
             _productRepository = productRepository ?? throw new ArgumentNullException(nameof(productRepository));
@@ -37,6 +39,7 @@ namespace OMS.Application.Services
             _eventPublisher = eventPublisher ?? throw new ArgumentNullException(nameof(eventPublisher));
             _unitOfWork = unitOfWork ?? throw new ArgumentNullException(nameof(unitOfWork));
             _logger = logger ?? throw new ArgumentNullException(nameof(logger));
+            _cartRepository = cartRepository;
         }
 
         public async Task<OrderDto> CreateOrderAsync(CreateOrderRequest request)
@@ -85,11 +88,8 @@ namespace OMS.Application.Services
                 }
 
                 // Sipariş oluştur
-                var order = Order.Create(request.CustomerId, orderItems);
+                var order = Order.Create(request.CustomerId, request.ShippingAddress, orderItems);
 
-                // Adresi kaydet
-                var shippingAddress = MapAddressFromRequest(request.ShippingAddress);
-                // Burada sipariş ile adres ilişkisi kurulabilir
 
                 // Ödeme bilgilerini kaydet (gerçek bir ödeme işlemi yapılabilir)
                 // Burada ödeme işlemi gerçekleştirilebilir
@@ -144,6 +144,120 @@ namespace OMS.Application.Services
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Sipariş oluşturma işlemi başarısız: {Message}", ex.Message);
+                throw;
+            }
+        }
+
+        public async Task<OrderDto> CreateOrderFromCartAsync(CreateOrderFromCartRequest request)
+        {
+            try
+            {
+                _logger.LogInformation("Sepetten sipariş oluşturma işlemi başlatıldı. Müşteri: {CustomerId}", request.CustomerId);
+
+                // Müşteri kontrolü
+                var customer = await _customerRepository.GetByIdAsync(request.CustomerId);
+                if (customer == null)
+                {
+                    _logger.LogWarning("Müşteri bulunamadı: {CustomerId}", request.CustomerId);
+                    throw new InvalidOperationException($"Müşteri bulunamadı: {request.CustomerId}");
+                }
+
+                // Müşterinin sepetini getir
+                var cart = await _cartRepository.GetByCustomerIdAsync(request.CustomerId);
+                if (cart == null || !cart.Items.Any())
+                {
+                    _logger.LogWarning("Sepet bulunamadı veya boş: {CustomerId}", request.CustomerId);
+                    throw new InvalidOperationException("Sepette ürün bulunmamaktadır.");
+                }
+
+                // OrderItem'ları oluştur
+                var orderItems = new List<OrderItem>();
+                decimal totalAmount = 0;
+
+                foreach (var cartItem in cart.Items)
+                {
+                    var product = await _productRepository.GetByIdAsync(cartItem.ProductId);
+                    if (product == null)
+                    {
+                        _logger.LogWarning("Ürün bulunamadı: {ProductId}", cartItem.ProductId);
+                        throw new InvalidOperationException($"Ürün bulunamadı: {cartItem.ProductId}");
+                    }
+
+                    // Stok kontrolü
+                    if (!product.ReserveStock(cartItem.Quantity))
+                    {
+                        _logger.LogWarning("Yetersiz stok. Ürün: {ProductId}, İstenen: {Quantity}, Mevcut: {Available}",
+                            product.Id, cartItem.Quantity, product.StockQuantity + cartItem.Quantity);
+                        throw new InvalidOperationException($"Yetersiz stok. Ürün: {product.Name}, İstenen: {cartItem.Quantity}");
+                    }
+
+                    var orderItem = OrderItem.Create(
+                        product.Id,
+                        product.Name,
+                        product.Price,
+                        cartItem.Quantity);
+
+                    orderItems.Add(orderItem);
+                    totalAmount += product.Price * cartItem.Quantity;
+                }
+
+              
+                var order = Order.Create(request.CustomerId, request.ShippingAddress, orderItems);
+
+              
+                await _unitOfWork.BeginTransactionAsync();
+
+                try
+                {
+                    // Siparişi kaydet
+                    await _orderRepository.AddAsync(order);
+
+                    // Ürün stok güncellemelerini kaydet
+                    foreach (var item in cart.Items)
+                    {
+                        var product = await _productRepository.GetByIdAsync(item.ProductId);
+                        await _productRepository.UpdateAsync(product);
+                    }
+
+                    // Değişiklikleri uygula
+                    await _unitOfWork.SaveChangesAsync();
+
+                    // Transaction tamamla
+                    await _unitOfWork.CommitTransactionAsync();
+
+                    // Event yayınla
+                    var orderCreatedEvent = new OrderCreatedEvent
+                    {
+                        OrderId = order.Id,
+                        CustomerId = order.CustomerId,
+                        TotalAmount = order.TotalAmount,
+                        CreatedAt = order.CreatedAt
+                    };
+
+                    await _eventPublisher.PublishAsync(orderCreatedEvent);
+
+                    // Sepeti temizle
+                    await _cartRepository.ClearCartAsync(request.CustomerId);
+                    await _unitOfWork.SaveChangesAsync();
+
+                    // Dönüş değerini hazırla
+                    var orderDto = MapOrderToDto(order);
+
+                    _logger.LogInformation("Sepetten sipariş başarıyla oluşturuldu. Sipariş ID: {OrderId}", order.Id);
+
+                    return orderDto;
+                }
+                catch (Exception ex)
+                {
+                    // Hata durumunda transaction geri al
+                    await _unitOfWork.RollbackTransactionAsync();
+                    _logger.LogError(ex, "Sepetten sipariş oluşturma işlemi sırasında hata: {Message}", ex.Message);
+                    throw;
+                }
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Sepetten sipariş oluşturma işlemi başarısız: {Message}", ex.Message);
                 throw;
             }
         }

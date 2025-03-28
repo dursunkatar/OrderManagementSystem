@@ -26,13 +26,20 @@ builder.Services.AddDbContext<OrderDbContext>(options =>
 
 builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
 {
+    var logger = sp.GetRequiredService<ILogger<RabbitMQEventPublisher>>();
     var factory = new ConnectionFactory
     {
         HostName = builder.Configuration["RabbitMQ:HostName"],
         UserName = builder.Configuration["RabbitMQ:UserName"],
-        Password = builder.Configuration["RabbitMQ:Password"]
+        Password = builder.Configuration["RabbitMQ:Password"],
+        VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"],
+        // Bağlantı sorunları yaşanıyorsa aşağıdaki ayarları ekleyin
+        RequestedHeartbeat = TimeSpan.FromSeconds(60),
+        AutomaticRecoveryEnabled = true, // Otomatik yeniden bağlanma
+        NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
     };
-    return new RabbitMQEventPublisher(factory);
+
+    return new RabbitMQEventPublisher(factory, logger);
 });
 
 

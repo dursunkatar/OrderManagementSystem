@@ -11,6 +11,7 @@ namespace OMS.API.Controllers
     public class OrdersController : ControllerBase
     {
         private readonly IOrderService _orderService;
+        private readonly ICartService _cartService;
         private readonly ILogger<OrdersController> _logger;
 
         public OrdersController(
@@ -18,6 +19,16 @@ namespace OMS.API.Controllers
             ILogger<OrdersController> logger)
         {
             _orderService = orderService;
+            _logger = logger;
+        }
+
+        public OrdersController(
+            IOrderService orderService,
+            ICartService cartService,
+            ILogger<OrdersController> logger)
+        {
+            _orderService = orderService;
+            _cartService = cartService;
             _logger = logger;
         }
 
@@ -32,6 +43,10 @@ namespace OMS.API.Controllers
                 }
 
                 var orderDto = await _orderService.CreateOrderAsync(request);
+
+                // Sipariş başarıyla oluşturulduysa sepeti temizle
+                await _cartService.ClearCartAsync(request.CustomerId);
+
                 return CreatedAtAction(nameof(GetOrder), new { id = orderDto.Id }, orderDto);
             }
             catch (InvalidOperationException ex)
@@ -43,6 +58,33 @@ namespace OMS.API.Controllers
             {
                 _logger.LogError(ex, "Sipariş oluşturulurken hata oluştu");
                 return StatusCode(500, new { message = "Sipariş oluşturulurken bir hata oluştu" });
+            }
+        }
+
+        [HttpPost("from-cart")]
+        public async Task<IActionResult> CreateOrderFromCart([FromBody] CreateOrderFromCartRequest request)
+        {
+            try
+            {
+                if (!ModelState.IsValid)
+                {
+                    return BadRequest(ModelState);
+                }
+
+                // Sepetten sipariş oluştur
+                var orderDto = await _orderService.CreateOrderFromCartAsync(request);
+
+                return CreatedAtAction(nameof(GetOrder), new { id = orderDto.Id }, orderDto);
+            }
+            catch (InvalidOperationException ex)
+            {
+                _logger.LogWarning(ex, "Sepetten sipariş oluşturulurken doğrulama hatası: {Message}", ex.Message);
+                return BadRequest(new { message = ex.Message });
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "Sepetten sipariş oluşturulurken hata oluştu");
+                return StatusCode(500, new { message = "Sepetten sipariş oluşturulurken bir hata oluştu" });
             }
         }
 
