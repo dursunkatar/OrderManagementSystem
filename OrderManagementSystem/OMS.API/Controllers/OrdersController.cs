@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace OMS.API.Controllers
 {
-    [Authorize]
+    
     [Route("api/[controller]")]
     [ApiController]
     public class OrdersController : ControllerBase
@@ -22,6 +22,7 @@ namespace OMS.API.Controllers
             _logger = logger;
         }
 
+        [Authorize(Roles = "Customer")]
         [HttpPost("from-cart")]
         public async Task<IActionResult> CreateOrderFromCart([FromBody] CreateOrderFromCartRequest request)
         {
@@ -89,6 +90,7 @@ namespace OMS.API.Controllers
             }
         }
 
+        [Authorize(Roles = "Customer")]
         [HttpGet("my-orders")]
         public async Task<IActionResult> GetMyOrders([FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
@@ -110,6 +112,7 @@ namespace OMS.API.Controllers
             }
         }
 
+        [Authorize(Roles = "Customer")]
         [HttpGet("customer/{customerId}")]
         [Authorize(Roles = "Admin")] // Sadece admin kullanıcılar diğer müşterilerin siparişlerini görebilir
         public async Task<IActionResult> GetCustomerOrders(int customerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
@@ -147,6 +150,7 @@ namespace OMS.API.Controllers
             }
         }
 
+        [Authorize(Roles = "Customer")]
         [HttpPut("{id}/cancel")]
         public async Task<IActionResult> CancelOrder(int id)
         {

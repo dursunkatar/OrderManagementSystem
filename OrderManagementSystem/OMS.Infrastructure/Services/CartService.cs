@@ -107,6 +107,9 @@ namespace OMS.Infrastructure.Services
                 // Sepete ürün ekle
                 cart.AddItem(product.Id, product.Name, product.Price, request.Quantity);
 
+                await _unitOfWork.SaveChangesAsync();
+
+
                 // Sepeti güncelle
                 await _cartRepository.UpdateAsync(cart);
                 await _unitOfWork.SaveChangesAsync();

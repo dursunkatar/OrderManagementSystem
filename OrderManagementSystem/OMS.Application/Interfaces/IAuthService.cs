@@ -9,5 +9,7 @@ namespace OMS.Application.Interfaces
         Task<int> CreateUserAsync(RegisterRequest request);
         Task<bool> AssignRoleAsync(int userId, string roleName);
         Task<IEnumerable<string>> GetUserRolesAsync(int userId);
+        Task<bool> RemoveRoleAsync(int userId, string roleName);
+        Task<bool> IsInRoleAsync(int userId, string roleName);
     }
 }

@@ -1,8 +1,10 @@
-﻿using Microsoft.Extensions.Configuration;
+﻿using Microsoft.EntityFrameworkCore;
+using Microsoft.Extensions.Configuration;
 using OMS.Application.DTOs;
 using OMS.Application.Interfaces;
 using OMS.Domain.Entities;
 using OMS.Domain.Helpers;
+using OMS.Infrastructure.Persistence;
 
 namespace OMS.Infrastructure.Services
 {
@@ -11,15 +13,18 @@ namespace OMS.Infrastructure.Services
         private readonly ICustomerRepository _customerRepository;
         private readonly IUnitOfWork _unitOfWork;
         private readonly IConfiguration _configuration;
+        private readonly OrderDbContext _context;
 
         public AuthService(
             ICustomerRepository customerRepository,
             IUnitOfWork unitOfWork,
-            IConfiguration configuration)
+            IConfiguration configuration,
+            OrderDbContext context)
         {
             _customerRepository = customerRepository;
             _unitOfWork = unitOfWork;
             _configuration = configuration;
+            _context = context;
         }
 
         public async Task<UserDto> ValidateUserAsync(string email, string password)
@@ -63,20 +68,99 @@ namespace OMS.Infrastructure.Services
             return customer.Id;
         }
 
-        public Task<bool> AssignRoleAsync(int userId, string roleName)
+        public async Task<bool> AssignRoleAsync(int userId, string roleName)
         {
-            // TODO: doldurulacak
-            // Müşteriye rol atama implementasyonu
-            // Bu, veritabanınızdaki rol yapısına bağlıdır
-            return Task.FromResult(true);
+            try
+            {
+                var user = await _customerRepository.GetByIdAsync(userId);
+                if (user == null)
+                    return false;
+
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+                if (role == null)
+                    return false;
+
+                // Kullanıcının zaten bu role sahip olup olmadığını kontrol et
+                var existingUserRole = await _context.UserRoles
+                    .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
+
+                if (existingUserRole != null)
+                    return true; // Zaten atanmış
+
+                // Yeni rol ata
+                var userRole = new UserRole
+                {
+                    UserId = userId,
+                    RoleId = role.Id
+                };
+
+                await _context.UserRoles.AddAsync(userRole);
+                await _unitOfWork.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
 
-        public Task<IEnumerable<string>> GetUserRolesAsync(int userId)
+        public async Task<bool> RemoveRoleAsync(int userId, string roleName)
         {
-            // TODO: doldurulacak
-            // Müşteri rollerini getirme implementasyonu
-            // Bu, veritabanınızdaki rol yapısına bağlıdır
-            return Task.FromResult<IEnumerable<string>>(new[] { "Customer" });
+            try
+            {
+                var role = await _context.Roles.FirstOrDefaultAsync(r => r.Name == roleName);
+                if (role == null)
+                    return false;
+
+                var userRole = await _context.UserRoles
+                    .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
+
+                if (userRole == null)
+                    return false; // Rol zaten atanmamış
+
+                _context.UserRoles.Remove(userRole);
+                await _unitOfWork.SaveChangesAsync();
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
+        }
+
+        public async Task<IEnumerable<string>> GetUserRolesAsync(int userId)
+        {
+            try
+            {
+                var roles = await _context.UserRoles
+                .Where(ur => ur.UserId == userId)
+                    .Join(_context.Roles,
+                        ur => ur.RoleId,
+                        r => r.Id,
+                        (ur, r) => r.Name)
+                    .ToListAsync();
+
+                return roles;
+            }
+            catch (Exception ex)
+            {
+                return Enumerable.Empty<string>();
+            }
+        }
+
+        public async Task<bool> IsInRoleAsync(int userId, string roleName)
+        {
+            try
+            {
+                return await _context.UserRoles
+                    .AnyAsync(ur => ur.UserId == userId && ur.Role.Name == roleName);
+            }
+            catch (Exception ex)
+            {
+                return false;
+            }
         }
     }
 }

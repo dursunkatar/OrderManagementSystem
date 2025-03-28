@@ -357,7 +357,7 @@ namespace OMS.Application.Services
                 {
                     OrderId = order.Id,
                     OldStatus = oldStatus,
-                    NewStatus = order.Status.Name,
+                    NewStatus = "COMPLETED",
                     ChangedAt = DateTime.UtcNow
                 };
 
@@ -387,7 +387,7 @@ namespace OMS.Application.Services
                 Id = order.Id,
                 CustomerId = order.CustomerId,
                 CustomerName = order.Customer?.FullName,
-                Status = order.Status?.Name,
+                Status = "COMPLETED",
                 CreatedAt = order.CreatedAt,
                 CompletedAt = order.CompletedAt,
                 CancelledAt = order.CancelledAt,

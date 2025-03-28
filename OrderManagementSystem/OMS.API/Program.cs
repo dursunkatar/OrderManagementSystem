@@ -60,7 +60,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateLifetime = true,
+            ValidateIssuer = false,        // İssuer doğrulama yapılmayacak
+            ValidateAudience = false,      // Audience doğrulama yapılmayacak
+            ValidateLifetime = true,       // Token'ın süresi kontrol edilecek
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"])),

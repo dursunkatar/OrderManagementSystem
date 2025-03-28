@@ -7,7 +7,7 @@ using System.Security.Claims;
 
 namespace OMS.API.Controllers
 {
-    [Authorize]
+    [Authorize(Roles = "Customer")]
     [Route("api/[controller]")]
     [ApiController]
     public class CartController : ControllerBase
