@@ -21,7 +21,7 @@ namespace OMS.Infrastructure.Messaging
                 _connection = connectionFactory.CreateConnection();
                 _channel = _connection.CreateModel();
 
-                // Event exchange tanımla
+                
                 _channel.ExchangeDeclare(
                     exchange: "order_events",
                     type: "topic",

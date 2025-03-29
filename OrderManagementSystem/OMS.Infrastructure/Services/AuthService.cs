@@ -80,14 +80,14 @@ namespace OMS.Infrastructure.Services
                 if (role == null)
                     return false;
 
-                // Kullanıcının zaten bu role sahip olup olmadığını kontrol et
+                
                 var existingUserRole = await _context.UserRoles
                     .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
 
                 if (existingUserRole != null)
-                    return true; // Zaten atanmış
+                    return true; 
 
-                // Yeni rol ata
+                
                 var userRole = new UserRole
                 {
                     UserId = userId,
@@ -117,7 +117,7 @@ namespace OMS.Infrastructure.Services
                     .FirstOrDefaultAsync(ur => ur.UserId == userId && ur.RoleId == role.Id);
 
                 if (userRole == null)
-                    return false; // Rol zaten atanmamış
+                    return false; 
 
                 _context.UserRoles.Remove(userRole);
                 await _unitOfWork.SaveChangesAsync();

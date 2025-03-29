@@ -33,9 +33,9 @@ builder.Services.AddSingleton<IEventPublisher, RabbitMQEventPublisher>(sp =>
         UserName = builder.Configuration["RabbitMQ:UserName"],
         Password = builder.Configuration["RabbitMQ:Password"],
         VirtualHost = builder.Configuration["RabbitMQ:VirtualHost"],
-        // Bağlantı sorunları yaşanıyorsa aşağıdaki ayarları ekleyin
+        
         RequestedHeartbeat = TimeSpan.FromSeconds(60),
-        AutomaticRecoveryEnabled = true, // Otomatik yeniden bağlanma
+        AutomaticRecoveryEnabled = true, 
         NetworkRecoveryInterval = TimeSpan.FromSeconds(10)
     };
 
@@ -52,7 +52,7 @@ builder.Services.AddScoped<ICartService, CartService>();
 builder.Services.AddInfrastructureServices(builder.Configuration);
 builder.Services.AddScoped<IUnitOfWork, UnitOfWork>();
 
-// Services
+
 
 
 builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
@@ -60,9 +60,9 @@ builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
     {
         options.TokenValidationParameters = new TokenValidationParameters
         {
-            ValidateIssuer = false,        // İssuer doğrulama yapılmayacak
-            ValidateAudience = false,      // Audience doğrulama yapılmayacak
-            ValidateLifetime = true,       // Token'ın süresi kontrol edilecek
+            ValidateIssuer = false,        
+            ValidateAudience = false,      
+            ValidateLifetime = true,       
             ValidateIssuerSigningKey = true,
             IssuerSigningKey = new SymmetricSecurityKey(
                 Encoding.UTF8.GetBytes(builder.Configuration["JWT:SecretKey"])),

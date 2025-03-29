@@ -33,7 +33,7 @@ namespace OMS.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // JWT token'dan kullanıcı ID'sini al
+                
                 var userId = GetCurrentUserId();
                 if (userId == 0)
                 {
@@ -41,7 +41,7 @@ namespace OMS.API.Controllers
                 }
 
 
-                // Sepetten sipariş oluştur
+                
                 var orderDto = await _orderService.CreateOrderFromCartAsync(request, userId);
 
                 return CreatedAtAction(nameof(GetOrder), new { id = orderDto.Id }, orderDto);
@@ -75,7 +75,7 @@ namespace OMS.API.Controllers
                     return NotFound(new { message = "Sipariş bulunamadı" });
                 }
 
-                // Kullanıcı sadece kendi siparişlerini görebilir (admin olmadığı sürece)
+                
                 if (orderDto.CustomerId != userId && !User.IsInRole("Admin"))
                 {
                     return Forbid();
@@ -114,7 +114,7 @@ namespace OMS.API.Controllers
 
         [Authorize(Roles = "Customer")]
         [HttpGet("customer/{customerId}")]
-        [Authorize(Roles = "Admin")] // Sadece admin kullanıcılar diğer müşterilerin siparişlerini görebilir
+        [Authorize(Roles = "Admin")] 
         public async Task<IActionResult> GetCustomerOrders(int customerId, [FromQuery] int page = 1, [FromQuery] int pageSize = 10)
         {
             try
@@ -156,7 +156,7 @@ namespace OMS.API.Controllers
         {
             try
             {
-                // Siparişi kontrol et
+                
                 var order = await _orderService.GetOrderAsync(id);
                 if (order == null)
                 {
@@ -165,7 +165,7 @@ namespace OMS.API.Controllers
 
                 var userId = GetCurrentUserId();
 
-                // Kullanıcı sadece kendi siparişlerini iptal edebilir (admin olmadığı sürece)
+                
                 if (order.CustomerId != userId && !User.IsInRole("Admin"))
                 {
                     return Forbid();
@@ -186,7 +186,7 @@ namespace OMS.API.Controllers
             }
         }
 
-        // JWT token'dan kullanıcı ID'sini alma yardımcı metodu
+        
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);

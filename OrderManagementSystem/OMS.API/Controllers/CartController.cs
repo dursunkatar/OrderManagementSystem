@@ -154,7 +154,7 @@ namespace OMS.API.Controllers
             }
         }
 
-        // JWT token'dan kullanıcı ID'sini alma yardımcı metodu
+        
         private int GetCurrentUserId()
         {
             var userIdClaim = User.FindFirst(ClaimTypes.NameIdentifier);

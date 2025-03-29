@@ -18,7 +18,7 @@ namespace OMS.Infrastructure.Services
         private readonly ICacheService _cacheService;
         private readonly ILogger<CartService> _logger;
 
-        private const string CART_CACHE_KEY = "cart_customer_{0}"; // {0} yerine customer id gelecek
+        private const string CART_CACHE_KEY = "cart_customer_{0}"; 
 
         public CartService(
             ICartRepository cartRepository,
@@ -38,7 +38,7 @@ namespace OMS.Infrastructure.Services
         {
             try
             {
-                // Önce cache'e bak
+                
                 var cacheKey = string.Format(CART_CACHE_KEY, customerId);
                 var cachedCart = await _cacheService.GetAsync<CartDto>(cacheKey);
 
@@ -48,7 +48,7 @@ namespace OMS.Infrastructure.Services
                     return cachedCart;
                 }
 
-                // Cache'te yoksa veritabanından getir
+                
                 var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
 
                 if (cart == null)
@@ -57,10 +57,10 @@ namespace OMS.Infrastructure.Services
                     return new CartDto { CustomerId = customerId };
                 }
 
-                // DTO'ya dönüştür
+                
                 var cartDto = MapCartToDto(cart);
 
-                // Cache'e ekle (30 dakika geçerli)
+                
                 await _cacheService.SetAsync(cacheKey, cartDto, TimeSpan.FromMinutes(30));
 
                 _logger.LogInformation("Sepet veritabanından alındı. Müşteri ID: {CustomerId}", customerId);
@@ -80,7 +80,7 @@ namespace OMS.Infrastructure.Services
                 _logger.LogInformation("Sepete ürün ekleniyor. Müşteri ID: {CustomerId}, Ürün ID: {ProductId}, Miktar: {Quantity}",
                     customerId, request.ProductId, request.Quantity);
 
-                // Ürün bilgilerini getir
+                
                 var product = await _productRepository.GetByIdAsync(request.ProductId);
                 if (product == null)
                 {
@@ -88,7 +88,7 @@ namespace OMS.Infrastructure.Services
                     throw new InvalidOperationException($"Ürün bulunamadı: {request.ProductId}");
                 }
 
-                // Stok kontrolü
+                
                 if (product.StockQuantity < request.Quantity)
                 {
                     _logger.LogWarning("Yetersiz stok. Ürün: {ProductId}, İstenen: {Quantity}, Mevcut: {Available}",
@@ -96,7 +96,7 @@ namespace OMS.Infrastructure.Services
                     throw new InvalidOperationException($"Yetersiz stok. Ürün: {product.Name}, İstenen: {request.Quantity}, Mevcut: {product.StockQuantity}");
                 }
 
-                // Müşterinin sepetini getir veya oluştur
+                
                 var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
                 if (cart == null)
                 {
@@ -104,17 +104,17 @@ namespace OMS.Infrastructure.Services
                     await _cartRepository.AddAsync(cart);
                 }
 
-                // Sepete ürün ekle
+                
                 cart.AddItem(product.Id, product.Name, product.Price, request.Quantity);
 
                 await _unitOfWork.SaveChangesAsync();
 
 
-                // Sepeti güncelle
+                
                 await _cartRepository.UpdateAsync(cart);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Cache'i temizle
+                
                 var cacheKey = string.Format(CART_CACHE_KEY, customerId);
                 await _cacheService.RemoveAsync(cacheKey);
 
@@ -137,7 +137,7 @@ namespace OMS.Infrastructure.Services
                 _logger.LogInformation("Sepetteki ürün güncelleniyor. Müşteri ID: {CustomerId}, Ürün ID: {ProductId}, Miktar: {Quantity}",
                     customerId, request.ProductId, request.Quantity);
 
-                // Müşterinin sepetini getir
+                
                 var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
                 if (cart == null)
                 {
@@ -147,12 +147,12 @@ namespace OMS.Infrastructure.Services
 
                 if (request.Quantity <= 0)
                 {
-                    // Ürünü sepetten kaldır
+                    
                     cart.RemoveItem(request.ProductId);
                 }
                 else
                 {
-                    // Ürün stok kontrolü
+                    
                     var product = await _productRepository.GetByIdAsync(request.ProductId);
                     if (product == null)
                     {
@@ -167,15 +167,15 @@ namespace OMS.Infrastructure.Services
                         throw new InvalidOperationException($"Yetersiz stok. Ürün: {product.Name}, İstenen: {request.Quantity}, Mevcut: {product.StockQuantity}");
                     }
 
-                    // Sepetteki ürün miktarını güncelle
+                    
                     cart.UpdateItemQuantity(request.ProductId, request.Quantity);
                 }
 
-                // Sepeti güncelle
+                
                 await _cartRepository.UpdateAsync(cart);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Cache'i temizle
+                
                 var cacheKey = string.Format(CART_CACHE_KEY, customerId);
                 await _cacheService.RemoveAsync(cacheKey);
 
@@ -197,7 +197,7 @@ namespace OMS.Infrastructure.Services
             {
                 _logger.LogInformation("Ürün sepetten kaldırılıyor. Müşteri ID: {CustomerId}, Ürün ID: {ProductId}", customerId, productId);
 
-                // Müşterinin sepetini getir
+                
                 var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
                 if (cart == null)
                 {
@@ -205,14 +205,14 @@ namespace OMS.Infrastructure.Services
                     return false;
                 }
 
-                // Ürünü sepetten kaldır
+                
                 cart.RemoveItem(productId);
 
-                // Sepeti güncelle
+                
                 await _cartRepository.UpdateAsync(cart);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Cache'i temizle
+                
                 var cacheKey = string.Format(CART_CACHE_KEY, customerId);
                 await _cacheService.RemoveAsync(cacheKey);
 
@@ -232,7 +232,7 @@ namespace OMS.Infrastructure.Services
             {
                 _logger.LogInformation("Sepet temizleniyor. Müşteri ID: {CustomerId}", customerId);
 
-                // Müşterinin sepetini getir
+                
                 var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
                 if (cart == null)
                 {
@@ -240,12 +240,12 @@ namespace OMS.Infrastructure.Services
                     return false;
                 }
 
-                // Sepeti temizle
+                
                 cart.Clear();
                 await _cartRepository.UpdateAsync(cart);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Cache'i temizle
+                
                 var cacheKey = string.Format(CART_CACHE_KEY, customerId);
                 await _cacheService.RemoveAsync(cacheKey);
 

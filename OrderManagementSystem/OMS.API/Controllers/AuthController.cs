@@ -39,10 +39,10 @@ namespace OMS.API.Controllers
                     return Unauthorized(new { message = "Geçersiz e-posta adresi veya şifre" });
                 }
 
-                // Kullanıcı rollerini al (örneğin: "Admin", "Customer" vb.)
+                
                 var roles = await _authService.GetUserRolesAsync(user.Id);
 
-                // JWT token oluştur
+                
                 var token = _tokenService.GenerateJwtToken(user.Id.ToString(), user.Email, roles);
 
                 return Ok(new
@@ -73,23 +73,23 @@ namespace OMS.API.Controllers
                     return BadRequest(ModelState);
                 }
 
-                // E-posta adresi kullanılıyor mu?
+                
                 if (await _authService.EmailExistsAsync(request.Email))
                 {
                     return Conflict(new { message = "Bu e-posta adresi zaten kullanılmaktadır" });
                 }
 
-                // Yeni kullanıcı oluştur
+                
                 var userId = await _authService.CreateUserAsync(request);
                 if (userId == default)
                 {
                     return BadRequest(new { message = "Kullanıcı oluşturulamadı" });
                 }
 
-                // Varsayılan olarak "Customer" rolü ata
+                
                 await _authService.AssignRoleAsync(userId, "Customer");
 
-                // Yeni oluşturulan kullanıcı için token oluştur
+                
                 var token = _tokenService.GenerateJwtToken(userId.ToString(), request.Email, new[] { "Customer" });
 
                 return Ok(new

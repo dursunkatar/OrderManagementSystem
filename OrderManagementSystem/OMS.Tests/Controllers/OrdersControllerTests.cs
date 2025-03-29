@@ -101,7 +101,7 @@ namespace OMS.Tests.Controllers
         [Fact]
         public async Task CancelOrder_WithValidId_ReturnsOkResult()
         {
-            // Arrange
+            
             var orderId = 1;
             var orderDto = new OrderDto { Id = orderId, CustomerId = 1 };
 
@@ -110,10 +110,10 @@ namespace OMS.Tests.Controllers
             _orderServiceMock.Setup(service => service.CancelOrderAsync(orderId))
                 .ReturnsAsync(orderDto);
 
-            // Act
+            
             var result = await _controller.CancelOrder(orderId);
 
-            // Assert
+            
             result.Should().BeOfType<OkObjectResult>();
             _orderServiceMock.Verify(service => service.CancelOrderAsync(orderId), Times.Once);
         }

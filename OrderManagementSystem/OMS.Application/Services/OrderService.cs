@@ -18,9 +18,9 @@ namespace OMS.Application.Services
         private readonly ILogger<OrderService> _logger;
         private readonly IUnitOfWork _unitOfWork;
 
-        // Cache anahtarları için sabitler
-        private const string ORDER_CACHE_KEY = "order_{0}"; // {0} yerine order id gelecek
-        private const string CUSTOMER_ORDERS_CACHE_KEY = "customer_{0}_orders_page_{1}_size_{2}"; // {0} yerine customer id, {1} yerine page, {2} yerine pageSize gelecek
+        
+        private const string ORDER_CACHE_KEY = "order_{0}"; 
+        private const string CUSTOMER_ORDERS_CACHE_KEY = "customer_{0}_orders_page_{1}_size_{2}"; 
 
         public OrderService(
             IOrderRepository orderRepository,
@@ -48,7 +48,7 @@ namespace OMS.Application.Services
             {
                 _logger.LogInformation("Sepetten sipariş oluşturma işlemi başlatıldı. Müşteri: {CustomerId}", customerId);
 
-                // Müşteri kontrolü
+                
                 var customer = await _customerRepository.GetByIdAsync(customerId);
                 if (customer == null)
                 {
@@ -56,7 +56,7 @@ namespace OMS.Application.Services
                     throw new InvalidOperationException($"Müşteri bulunamadı: {customerId}");
                 }
 
-                // Müşterinin sepetini getir
+                
                 var cart = await _cartRepository.GetByCustomerIdAsync(customerId);
                 if (cart == null || !cart.Items.Any())
                 {
@@ -64,7 +64,7 @@ namespace OMS.Application.Services
                     throw new InvalidOperationException("Sepette ürün bulunmamaktadır.");
                 }
 
-                // OrderItem'ları oluştur
+                
                 var orderItems = new List<OrderItem>();
                 decimal totalAmount = 0;
 
@@ -77,7 +77,7 @@ namespace OMS.Application.Services
                         throw new InvalidOperationException($"Ürün bulunamadı: {cartItem.ProductId}");
                     }
 
-                    // Stok kontrolü
+                    
                     if (!product.ReserveStock(cartItem.Quantity))
                     {
                         _logger.LogWarning("Yetersiz stok. Ürün: {ProductId}, İstenen: {Quantity}, Mevcut: {Available}",
@@ -103,23 +103,23 @@ namespace OMS.Application.Services
 
                 try
                 {
-                    // Siparişi kaydet
+                    
                     await _orderRepository.AddAsync(order);
 
-                    // Ürün stok güncellemelerini kaydet
+                    
                     foreach (var item in cart.Items)
                     {
                         var product = await _productRepository.GetByIdAsync(item.ProductId);
                         await _productRepository.UpdateAsync(product);
                     }
 
-                    // Değişiklikleri uygula
+                    
                     await _unitOfWork.SaveChangesAsync();
 
-                    // Transaction tamamla
+                    
                     await _unitOfWork.CommitTransactionAsync();
 
-                    // Event yayınla
+                    
                     var orderCreatedEvent = new OrderCreatedEvent
                     {
                         OrderId = order.Id,
@@ -130,11 +130,11 @@ namespace OMS.Application.Services
 
                     await _eventPublisher.PublishAsync(orderCreatedEvent);
 
-                    // Sepeti temizle
+                    
                     await _cartRepository.ClearCartAsync(customerId);
                     await _unitOfWork.SaveChangesAsync();
 
-                    // Dönüş değerini hazırla
+                    
                     var orderDto = MapOrderToDto(order);
 
                     _logger.LogInformation("Sepetten sipariş başarıyla oluşturuldu. Sipariş ID: {OrderId}", order.Id);
@@ -143,7 +143,7 @@ namespace OMS.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    // Hata durumunda transaction geri al
+                    
                     await _unitOfWork.RollbackTransactionAsync();
                     _logger.LogError(ex, "Sepetten sipariş oluşturma işlemi sırasında hata: {Message}", ex.Message);
                     throw;
@@ -160,7 +160,7 @@ namespace OMS.Application.Services
         {
             try
             {
-                // Önce cache'e bak
+                
                 var cacheKey = string.Format(ORDER_CACHE_KEY, orderId);
                 var cachedOrder = await _cacheService.GetAsync<OrderDto>(cacheKey);
 
@@ -170,7 +170,7 @@ namespace OMS.Application.Services
                     return cachedOrder;
                 }
 
-                // Cache'te yoksa veritabanından getir
+                
                 var order = await _orderRepository.GetByIdAsync(orderId);
                 if (order == null)
                 {
@@ -178,10 +178,10 @@ namespace OMS.Application.Services
                     return null;
                 }
 
-                // DTO'ya dönüştür
+                
                 var orderDto = MapOrderToDto(order);
 
-                // Cache'e ekle (1 saat geçerli)
+                
                 await _cacheService.SetAsync(cacheKey, orderDto, TimeSpan.FromHours(1));
 
                 _logger.LogInformation("Sipariş veritabanından alındı ve cache'e eklendi. Sipariş ID: {OrderId}", orderId);
@@ -201,7 +201,7 @@ namespace OMS.Application.Services
                 if (page < 1) page = 1;
                 if (pageSize < 1) pageSize = 10;
 
-                // Önce cache'e bak
+                
                 var cacheKey = string.Format(CUSTOMER_ORDERS_CACHE_KEY, customerId, page, pageSize);
                 var cachedResult = await _cacheService.GetAsync<PagedResult<OrderDto>>(cacheKey);
 
@@ -211,11 +211,11 @@ namespace OMS.Application.Services
                     return cachedResult;
                 }
 
-                // Cache'te yoksa veritabanından getir
+                
                 var orders = await _orderRepository.GetByCustomerIdAsync(customerId, page, pageSize);
                 var totalCount = await _orderRepository.GetCustomerOrderCountAsync(customerId);
 
-                // DTO'ya dönüştür
+                
                 var orderDtos = orders.Select(MapOrderToDto).ToList();
 
                 var result = new PagedResult<OrderDto>
@@ -227,7 +227,7 @@ namespace OMS.Application.Services
                     TotalPages = (int)Math.Ceiling(totalCount / (double)pageSize)
                 };
 
-                // Cache'e ekle (15 dakika geçerli)
+                
                 await _cacheService.SetAsync(cacheKey, result, TimeSpan.FromMinutes(15));
 
                 _logger.LogInformation("Müşteri siparişleri veritabanından alındı ve cache'e eklendi. Müşteri ID: {CustomerId}, Page: {Page}", customerId, page);
@@ -242,7 +242,7 @@ namespace OMS.Application.Services
 
         public async Task<OrderDto> CancelOrderAsync(int orderId)
         {
-            // CancelOrderAsync(Guid orderId) metodu yerine bu metodu kullanacağız
+            
             try
             {
                 var order = await _orderRepository.GetByIdAsync(orderId);
@@ -275,18 +275,18 @@ namespace OMS.Application.Services
                     foreach (var product in products)
                     {
                         var item = order.Items.Single(p => p.ProductId == product.Id);
-                        // Stok miktarını geri ekle
+                        
                         product.UpdateStock(item.Quantity);
                         await _productRepository.UpdateAsync(product);
                     }
 
-                    // Değişiklikleri uygula
+                    
                     await _unitOfWork.SaveChangesAsync();
 
-                    // Transaction tamamla
+                    
                     await _unitOfWork.CommitTransactionAsync();
 
-                    // Event yayınla
+                    
                     var statusChangedEvent = new OrderStatusChangedEvent
                     {
                         OrderId = order.Id,
@@ -297,10 +297,10 @@ namespace OMS.Application.Services
 
                     await _eventPublisher.PublishAsync(statusChangedEvent);
 
-                    // Cache'ten sil (artık geçersiz)
+                    
                     await _cacheService.RemoveAsync(string.Format(ORDER_CACHE_KEY, orderId));
 
-                    // DTO'ya dönüştür
+                    
                     var orderDto = MapOrderToDto(order);
 
                     _logger.LogInformation("Sipariş başarıyla iptal edildi. Sipariş ID: {OrderId}", orderId);
@@ -308,7 +308,7 @@ namespace OMS.Application.Services
                 }
                 catch (Exception ex)
                 {
-                    // Hata durumunda transaction geri al
+                    
                     await _unitOfWork.RollbackTransactionAsync();
                     _logger.LogError(ex, "Sipariş iptal edilirken hata: {Message}", ex.Message);
                     throw;
@@ -321,10 +321,10 @@ namespace OMS.Application.Services
             }
         }
 
-        // OrderService.cs içindeki eksik metotlar
+        
         public async Task<OrderDto> CompleteOrderAsync(int orderId)
         {
-            // CompleteOrderAsync(Guid orderId) metodu yerine bu metodu kullanacağız
+            
             try
             {
                 var order = await _orderRepository.GetByIdAsync(orderId);
@@ -334,7 +334,7 @@ namespace OMS.Application.Services
                     throw new InvalidOperationException($"Sipariş bulunamadı: {orderId}");
                 }
 
-                // Sipariş durumunu kontrol et
+                
                 if (order.StatusId != Const.OrderStatus.PENDING)
                 {
                     _logger.LogWarning("Sipariş tamamlanamaz çünkü durumu Pending değil. Sipariş ID: {OrderId}, Mevcut Durum: {Status}",
@@ -342,17 +342,17 @@ namespace OMS.Application.Services
                     throw new InvalidOperationException($"Sadece Pending durumundaki siparişler tamamlanabilir. Mevcut durum: {order.Status.Name}");
                 }
 
-                // Eski durumu kaydet (event için)
+                
                 var oldStatus = order.Status.Name;
 
-                // Siparişi tamamla
+                
                 order.Complete();
 
-                // Güncelle
+                
                 await _orderRepository.UpdateAsync(order);
                 await _unitOfWork.SaveChangesAsync();
 
-                // Event yayınla
+                
                 var statusChangedEvent = new OrderStatusChangedEvent
                 {
                     OrderId = order.Id,
@@ -363,10 +363,10 @@ namespace OMS.Application.Services
 
                 await _eventPublisher.PublishAsync(statusChangedEvent);
 
-                // Cache'ten sil (artık geçersiz)
+                
                 await _cacheService.RemoveAsync(string.Format(ORDER_CACHE_KEY, orderId));
 
-                // DTO'ya dönüştür
+                
                 var orderDto = MapOrderToDto(order);
 
                 _logger.LogInformation("Sipariş başarıyla tamamlandı. Sipariş ID: {OrderId}", orderId);
@@ -379,7 +379,7 @@ namespace OMS.Application.Services
             }
         }
 
-        // OrderService.cs içine MapOrderToDto yardımcı metodu ekleyin
+        
         private OrderDto MapOrderToDto(Order order)
         {
             return new OrderDto
