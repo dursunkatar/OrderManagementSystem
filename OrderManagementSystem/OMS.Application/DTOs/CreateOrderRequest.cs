@@ -5,13 +5,6 @@ namespace OMS.Application.DTOs
     public class CreateOrderRequest
     {
         [Required]
-        public int CustomerId { get; set; }
-
-        [Required]
-        [MinLength(1, ErrorMessage = "En az bir ürün seçilmelidir.")]
-        public List<OrderItemRequest> Items { get; set; } = new List<OrderItemRequest>();
-
-        [Required]
         public string ShippingAddress { get; set; }
 
         [Required]

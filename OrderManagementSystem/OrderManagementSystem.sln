@@ -1,7 +1,7 @@
 ﻿
 Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
-VisualStudioVersion = 17.13.35919.96 d17.13
+VisualStudioVersion = 17.13.35919.96
 MinimumVisualStudioVersion = 10.0.40219.1
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "src", "src", "{02EA681E-C7D8-13C7-8484-4AC65E1B71E8}"
 EndProject
@@ -14,6 +14,8 @@ EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OMS.API", "OMS.API\OMS.API.csproj", "{97A28E0F-56EF-42DD-8D87-6287ADE9D23A}"
 EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "tests", "tests", "{C38D876C-0312-45E8-8009-B717835E2482}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "OMS.Tests", "OMS.Tests\OMS.Tests.csproj", "{33CE1CA5-278E-7CB5-428D-BAAA2124770B}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -37,6 +39,10 @@ Global
 		{97A28E0F-56EF-42DD-8D87-6287ADE9D23A}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{97A28E0F-56EF-42DD-8D87-6287ADE9D23A}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{97A28E0F-56EF-42DD-8D87-6287ADE9D23A}.Release|Any CPU.Build.0 = Release|Any CPU
+		{33CE1CA5-278E-7CB5-428D-BAAA2124770B}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{33CE1CA5-278E-7CB5-428D-BAAA2124770B}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{33CE1CA5-278E-7CB5-428D-BAAA2124770B}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{33CE1CA5-278E-7CB5-428D-BAAA2124770B}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE
@@ -46,6 +52,7 @@ Global
 		{095E2FC8-5CD6-4E04-98B7-42FDE54E5E82} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{8A48897A-90B7-4342-B928-835D5C931882} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
 		{97A28E0F-56EF-42DD-8D87-6287ADE9D23A} = {02EA681E-C7D8-13C7-8484-4AC65E1B71E8}
+		{33CE1CA5-278E-7CB5-428D-BAAA2124770B} = {C38D876C-0312-45E8-8009-B717835E2482}
 	EndGlobalSection
 	GlobalSection(ExtensibilityGlobals) = postSolution
 		SolutionGuid = {60610FD7-1015-4889-88D4-F5FBCEB7B27A}
